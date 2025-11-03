@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Nameplate Generator</title>
+    <style>
+        :root{--accent:#3a86ff}
+        body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;margin:0;color:#0b1020;display:flex;align-items:center;justify-content:center;min-height:100vh}
+        .login-container{background:#fff;border-radius:10px;padding:12px;box-shadow:0 6px 18px rgba(18,22,40,0.06);width:100%;max-width:420px;margin:18px}
+        h1{margin:0 0 12px;font-size:20px;text-align:center}
+        label{display:block;margin:10px 0 6px;font-size:13px;color:#333}
+        input[type=text], input[type=email], input[type=tel], input[type=password], select{width:100%;padding:8px;border-radius:5px;border:1px solid #d6d9e6;box-sizing:border-box}
+        input:focus, select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 4px rgba(58,134,255,0.06)}
+        .checkbox-group{display:flex;align-items:center;gap:0.5rem;margin:10px 0}
+        .checkbox-group label{margin:0;color:#666;font-size:13px}
+        button{background:var(--accent);color:#ffffff;border:0;padding:8px 10px;border-radius:8px;cursor:pointer;font-weight: bold;}
+        button:hover{background:#2aef76;color:#000000;}
+        .error{color:#e74c3c;font-size:0.85rem;margin-top:6px}
+        .error-shake{animation:shake 0.5s}
+        @keyframes shake{0%,100%{transform:translateX(0)}10%,30%,50%,70%,90%{transform:translateX(-5px)}20%,40%,60%,80%{transform:translateX(5px)}}
+    </style>
+</head>
+<body style="background-image: url('loginbg.jpeg');font-weight: bold;font-size: 25px;text-decoration: underline;">
+    <div class="login-container">
+        <h1 style="text-decoration: underline;">SIGN UP</h1>
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="name">Full Name:</label>
+                <input type="text" id="name" required>
+                <div class="error"></div>
+            </div>
+            <div class="form-group">
+                <label for="email">Email Address:</label>
+                <input type="email" id="email" required>
+                <div class="error"></div>
+            </div>
+            <div class="form-group">
+                <label for="mobile">Mobile Number:</label>
+                <input type="tel" id="mobile" placeholder="10 digits e.g. 0712345678" required>
+                <div class="error"></div>
+            </div>
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" id="password" required>
+                <div class="error"></div>
+            </div>
+            <div class="checkbox-group">
+                <input type="checkbox" id="terms" required>
+                <label for="terms">I agree to the terms and conditions.</label>
+            </div>
+            <button type="submit" style="margin-right:5px;">Login</button><button type="reset">Reset</button>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Reset errors
+            document.querySelectorAll('.error').forEach(error => error.textContent = '');
+            
+            let hasError = false;
+            const name = document.getElementById('name');
+            const email = document.getElementById('email');
+            const mobile = document.getElementById('mobile');
+            const password = document.getElementById('password');
+            const terms = document.getElementById('terms');
+            
+            // Validate name
+            if (!name.value.trim()) {
+                name.parentElement.querySelector('.error').textContent = 'Name is required';
+                hasError = true;
+            } else if (name.value.trim().length < 2) {
+                name.parentElement.querySelector('.error').textContent = 'Name must be at least 2 characters';
+                hasError = true;
+            }
+            
+            // Validate email
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!email.value.trim()) {
+                email.parentElement.querySelector('.error').textContent = 'Email is required';
+                hasError = true;
+            } else if (!emailRegex.test(email.value.trim())) {
+                email.parentElement.querySelector('.error').textContent = 'Please enter a valid email';
+                hasError = true;
+            }
+
+            // Validate mobile (must be 10 digits)
+            const digits = mobile.value.replace(/\D/g, ''); // strip non-digits
+            if (!mobile.value.trim()) {
+                mobile.parentElement.querySelector('.error').textContent = 'Mobile number is required';
+                hasError = true;
+            } else if (digits.length !== 10) {
+                mobile.parentElement.querySelector('.error').textContent = 'Enter a valid 10-digit mobile number';
+                hasError = true;
+            }
+            
+            // Validate password
+            if (!password.value) {
+                password.parentElement.querySelector('.error').textContent = 'Password is required';
+                hasError = true;
+            } else if (password.value.length < 6) {
+                password.parentElement.querySelector('.error').textContent = 'Password must be at least 6 characters';
+                hasError = true;
+            }
+            
+            // Validate terms
+            if (!terms.checked) {
+                terms.parentElement.classList.add('error-shake');
+                setTimeout(() => {
+                    terms.parentElement.classList.remove('error-shake');
+                }, 500);
+                hasError = true;
+            }
+            
+            if (!hasError) {
+                // Store user info in localStorage
+                localStorage.setItem('nameplate_user', JSON.stringify({
+                    name: name.value.trim(),
+                    email: email.value.trim(),
+                    mobile: mobile.value.trim(),
+                    loggedIn: true
+                }));
+                
+                // Redirect back to homepage
+                window.location.href = 'homepage.html';
+            }
+        });
+    </script>
+</body>
+</html>

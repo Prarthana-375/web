@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Introduction</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      background-repeat: no-repeat;
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+      color: rgb(255, 255, 255);
+      margin: 0;
+      position: relative;
+      /* keep your existing background image via inline style or move it here:
+         background-image: url('intro.jpg'); */
+    }
+
+    /* Positioned fixed in the bottom-right corner of the viewport */
+    .cta-btn {
+      position: fixed;
+      right: 20px;    /* distance from the right edge */
+      bottom: 20px;   /* distance from the bottom edge */
+      z-index: 1000;  /* keep it above other content */
+      background: #ffffff;
+      color: #000000;
+      cursor: pointer;
+      font-weight: bold;
+      padding: 12px 18px;
+      border: none;
+      border-radius: 6px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      transition: background 0.15s ease, color 0.15s ease;
+    }
+
+    .cta-btn:hover {
+      background: #006aff;
+      color: #ffffff;
+    }
+
+    /* Optional: smaller screens tweak */
+    @media (max-width: 420px) {
+      .cta-btn {
+        right: 12px;
+        bottom: 12px;
+        padding: 10px 14px;
+        font-size: 14px;
+      }
+    }
+  </style>
+</head>
+<body style="background-image: url('intro.jpg'); padding:610px 50px 50px 200vh;">
+  <button class="cta-btn" type="button" onclick="window.location.href='loginform.html'">SIGN UP!</button>
+</body>
+</html>

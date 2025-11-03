@@ -1,0 +1,822 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Nameplate Generator</title>
+  <style>
+    :root{--accent:#3a86ff}
+    /* Page base */
+    body{
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+      margin:0;
+      background-color:#2b2b2b;
+      background-image:url('bg.jpg');
+      background-size:cover;
+      background-position:center center;
+      background-repeat:no-repeat;
+      background-attachment:fixed;
+      color:#0b1020;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
+
+    /* Center the main content and keep the max width */
+    .wrap{
+      max-width:1200px;
+      margin:28px auto;
+      padding:18px;
+      display:flex;
+      flex-direction:column;
+      align-items:center; /* center all panels horizontally */
+      gap:18px;
+    }
+
+    h1{margin:0 0 12px;font-size:20px;text-decoration: underline; text-align:center;}
+    .grid{
+      display:grid;
+      grid-template-columns:460px 700px;
+      grid-template-rows:1fr;
+      gap:24px;
+      justify-content:center;
+      align-items:start;
+      width:100%;
+    }
+
+    .panel{
+      background-image: url('butterfly.jpeg');
+      border-radius:10px;
+      padding:18px;
+      box-shadow:0 6px 18px rgba(18,22,40,0.06);
+      height:100%;
+      box-sizing:border-box;
+      display:flex;
+      flex-direction:column;
+      align-items:center; /* center children horizontally */
+    }
+
+    /* Preview panel specific styles */
+    .panel.canvas-wrap{padding:32px;background:#1a1a1a}
+    /* Center the form content within panels and center text inside them */
+    .panel > *:not(.bg-type):not(.templates):not(.image-gallery){
+      max-width:360px;
+      margin-left:auto;
+      margin-right:auto;
+      width:100%;
+      text-align:center; /* center text of labels and inline content */
+    }
+
+    .canvas-wrap{flex:1;display:flex;align-items:center}
+    /* Improved label hierarchy */
+    label{display:block;margin:12px 0 8px;font-size:14px;color:#2a2f45;font-weight:500;text-align:center}
+    label.main-label{font-size:16px;font-weight:600;color:#1a1f36;margin-top:20px;margin-bottom:10px}
+    /* Radio button labels */
+    .bg-type{display:flex;gap:12px;margin:8px 0;justify-content:center}
+    .bg-type label{display:inline-flex;align-items:center;margin:0;font-size:14px;cursor:pointer}
+
+    /* Better input styling */
+    input[type=text], input[type=url], select{
+      width:100%;
+      padding:10px;
+      border-radius:6px;
+      border:1px solid #a9abb4;
+      font-size:14px;
+      box-sizing:border-box;
+      text-align:center; /* center text inside inputs */
+    }
+    input[type=text]:focus, input[type=url]:focus, select:focus{border-color:var(--accent);outline:none;box-shadow:0 0 0 2px rgba(58,134,255,0.2)}
+    .controls{display:flex;gap:10px;flex-wrap:wrap}
+    button{background:var(--accent);color:#fff;border:0;padding:8px 10px;border-radius:8px;cursor:pointer}
+    .canvas-wrap{display:flex;justify-content:center;align-items:center;height:100%;}
+    canvas{display:block;margin:0 auto;width:500px;border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,0.12);background:#ffffff;}
+    .muted{color:#666;font-size:13px}
+    .row{display:flex;gap:8px;justify-content:center}
+    .templates{margin-top:8px;text-align:center}
+    .bg-options{margin-top:8px}
+    .image-options,.color-options,.gradient-options{display:none}
+    .image-options.active,.color-options.active,.gradient-options.active{display:block}
+    .info{color:#3a86ff;font-size:12px;margin-top:4px;text-align:center}
+    .image-gallery{position:relative;overflow:hidden;height:300px;padding:0 4px}
+    .image-scroll{
+      display:grid;
+      grid-template-columns:repeat(2, 1fr);
+      gap:8px;
+      transition:transform 0.3s ease;
+      overflow-y:auto;
+      max-height:300px;
+      padding:4px;
+      justify-items:center; /* center thumbnails */
+    }
+    .image-box{
+      aspect-ratio:3/1;
+      border:2px solid #d6d9e6;
+      border-radius:8px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      cursor:pointer;
+      overflow:hidden;
+      position:relative;
+      width:100%;
+      max-width:420px;
+    }
+    .image-box img{width:100%;height:100%;object-fit:cover}
+    .image-box:hover{border-color:#3a86ff}
+    .image-box.active{border-color:#3a86ff;box-shadow:0 0 0 2px #3a86ff}
+    /* Hide scrollbar for Chrome, Safari and Opera */
+    .image-scroll::-webkit-scrollbar { width: 6px; }
+    .image-scroll::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 3px; }
+    .image-scroll::-webkit-scrollbar-thumb { background: #3a86ff; border-radius: 3px; }
+    .image-scroll::-webkit-scrollbar-thumb:hover { background: #2a76ef; }
+
+    /* Actions row (undo/redo/render/download) - center them */
+    .actions{margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:center}
+
+    @media (max-width:880px){
+      .grid{grid-template-columns:1fr}
+      canvas{width:100%}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1 style="text-align: center; font-size: 50px; font-family:Arial;font-weight: lighter;font-style: italic;">NAMEPLATE GENERATOR</h1>
+    <div class="grid">
+      <div class="panel">
+        <label for="name" class="main-label">Name/Text:</label>
+        <input id="name" type="text" placeholder="Enter your name..." />
+
+        <div style="display:flex;gap:8px;margin-top:20px;align-items:center;justify-content:center;">
+          <div style="flex:1;min-width:0">
+            <label for="font" class="main-label">Select Font Style:</label>
+            <select id="font">
+              <!-- store font family name only in value (do not include size) -->
+              <option value="Segoe UI">Segoe UI</option>
+              <option value="Roboto">Roboto</option>
+              <option value="Georgia">Georgia</option>
+              <option value="Courier New">Courier New</option>
+              <option value="Arial">Arial</option>
+              <option value="Agency FB">Agency FB</option>
+              <option value="Comic Sans MS">Comic Sans MS</option>
+              <option value="Impact">Impact</option>
+              <option value="Calibri">Calibri</option>
+              <option value="Bahnschrift">Bahnschrift</option>
+              <option value="Copperplate">Copperplate Light</option>
+              <option value="Playbill">Playbill</option>
+              <option value="Ravie">Ravie</option>
+              <option value="Blackadder ITC">Blackadder ITC</option>
+            </select>
+          </div>
+            <div style="width:110px">
+            <label for="size" class="main-label">Font Size:</label>
+            <input id="size" type="number" value="48" min="12" max="160" style="width:100%;padding:10px;border-radius:6px;border:1px solid #d6d9e6" />
+          </div>
+        </div>
+
+        <div style="display:flex;gap:8px;margin-top:8px;align-items:center;justify-content:center">
+          <div style="flex:1">
+            <label class="main-label">Text position:</label>
+            <div style="display:flex;gap:12px;align-items:center;background:#f5f6f8;padding:10px;border-radius:6px;justify-content:center">
+              <div class="muted">X: <span id="posX">450</span></div>
+              <div class="muted">Y: <span id="posY">150</span></div>
+              <button id="resetPos" style="margin-left:auto">Reset</button>
+            </div>
+            <div class="muted" style="font-size:12px;margin-top:6px">Tip: Click and drag the text on the canvas to move it. Use arrow keys to nudge when text is selected.</div>
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:10px;align-items:center">
+          <div style="flex:1">
+            <label for="color" class="main-label">Select Text Color:</label>
+            <input id="color" type="color" value="#ffffff" style="width:100%;height:40px;padding:4px;border-radius:6px;border:1px solid #d6d9e6" />
+          </div>
+        </div>
+
+        <label class="main-label">Background Options:</label>
+        <div class="templates">
+          <div class="bg-type">
+            <label>
+              <input type="radio" name="bgType" value="color" checked> Color
+            </label>
+            <label>
+              <input type="radio" name="bgType" value="gradient"> Gradient
+            </label>
+            <label>
+              <input type="radio" name="bgType" value="image"> Image
+            </label>
+          </div>
+          
+          <div id="colorOptions" class="bg-options color-options active">
+            <label for="bgColor">Select Background Color:</label>
+            <input id="bgColor" type="color" value="#2b2b2b" style="width:100%;height:40px;padding:4px" />
+          </div>
+
+          <div id="gradientOptions" class="bg-options gradient-options">
+            <div style="display:flex;gap:8px;margin-bottom:8px;justify-content:center">
+              <div style="flex:1;min-width:0">
+                <label for="gradientColor1">First Color</label>
+                <input id="gradientColor1" type="color" value="#2b2b2b" style="width:100%;height:40px;padding:4px" />
+              </div>
+              <div style="flex:1;min-width:0">
+                <label for="gradientColor2">Second Color</label>
+                <input id="gradientColor2" type="color" value="#1a1a1a" style="width:100%;height:40px;padding:4px" />
+              </div>
+            </div>
+            <label for="gradientType">Gradient Type</label>
+            <select id="gradientType" style="width:100%;margin-bottom:8px">
+              <option value="linear">Linear</option>
+              <option value="radial">Radial</option>
+            </select>
+
+            <div id="linearControls">
+              <label for="gradientAngle">Gradient Angle (Linear)</label>
+              <input type="range" id="gradientAngle" min="0" max="360" value="90" style="width:100%" />
+            </div>
+
+            <div id="radialControls" style="display:none;margin-top:8px">
+              <label for="gradientRadialAngle">Radial Offset Angle (direction)</label>
+              <input type="range" id="gradientRadialAngle" min="0" max="360" value="0" style="width:100%" />
+              <label for="gradientRadialOffset" style="margin-top:6px">Radial Offset (distance %)</label>
+              <input type="range" id="gradientRadialOffset" min="0" max="50" value="0" style="width:100%" />
+              <div class="muted" style="font-size:12px;margin-top:6px">Radial offset moves the inner focus of the radial gradient in the chosen direction.</div>
+            </div>
+          </div>
+
+          <div id="imageOptions" class="bg-options image-options">
+            <div class="image-gallery">
+              <div class="image-scroll" id="imageScroll">
+                <!-- Thumbnails are generated dynamically by script to ensure consistency with available files -->
+              </div>
+            </div>
+            <div class="info">Click on any image box. Images will be automatically resized to 900 × 300 pixels</div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button id="undoBtn" disabled title="Undo (Ctrl+Z)">Undo</button>
+          <button id="redoBtn" disabled title="Redo (Ctrl+Y)">Redo</button>
+          <button id="render">Render Preview</button>
+          <button id="download">Download PNG</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div style="display:flex;justify-content:center;align-items:center;margin-bottom:0px;">
+          <div class="muted">Preview Canvas size: <span id="sizeInfo"></span></div>
+        </div>
+        <div class="canvas-wrap">
+          <div style="width:100px;text-align:center;margin-right:385px;padding: 10%;">
+            <canvas id="canvas" width="900" height="300"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const nameInput = document.getElementById('name');
+    const fontSelect = document.getElementById('font');
+    const sizeInput = document.getElementById('size');
+    const colorInput = document.getElementById('color');
+    const defaultAlign = 'center';
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const sizeInfo = document.getElementById('sizeInfo');
+    const posXEl = document.getElementById('posX');
+    const posYEl = document.getElementById('posY');
+    const resetPosBtn = document.getElementById('resetPos');
+
+    // Background handling
+    const bgColorInput = document.getElementById('bgColor');
+    const imageScroll = document.getElementById('imageScroll');
+    const bgTypeInputs = document.querySelectorAll('input[name="bgType"]');
+    const colorOptions = document.getElementById('colorOptions');
+    const imageOptions = document.getElementById('imageOptions');
+    const gradientOptions = document.getElementById('gradientOptions');
+    const gradientColor1 = document.getElementById('gradientColor1');
+    const gradientColor2 = document.getElementById('gradientColor2');
+    const gradientType = document.getElementById('gradientType');
+    const gradientAngle = document.getElementById('gradientAngle');
+    const gradientRadialAngle = document.getElementById('gradientRadialAngle');
+    const gradientRadialOffset = document.getElementById('gradientRadialOffset');
+    const linearControls = document.getElementById('linearControls');
+    const radialControls = document.getElementById('radialControls');
+
+    let backgroundImage = null;
+
+    // Text position and dragging state
+    let textPos = { x: canvas.width / 2, y: canvas.height / 2 };
+    let draggingText = false;
+    let textSelected = false;
+    let dragOffset = { x: 0, y: 0 };
+
+    function updatePosReadout(){
+      posXEl.textContent = Math.round(textPos.x);
+      posYEl.textContent = Math.round(textPos.y);
+    }
+
+    resetPosBtn.addEventListener('click', (e)=>{ e.preventDefault(); textPos.x = canvas.width/2; textPos.y = canvas.height/2; updatePosReadout(); renderPreview(); });
+
+    const imageFolder = './';
+    const imageFiles = [
+      '4.jpg','5.jpg','6.jpg','7.jpg','8.jpg','9.jpg','10.jpg','11.jpg','12.jpg',
+      '13.jpeg','14.jpeg','14.jpg','15.jpg','16.jpg',
+      'nameplate.jpg','nameplate2.jpg','navyblue.jpg','np3.jpg','wed2.jpg','last.jpg'
+    ];
+
+    function populateGallery(){
+      imageScroll.innerHTML = '';
+      imageFiles.forEach(file => {
+        const box = document.createElement('div');
+        box.className = 'image-box';
+        box.setAttribute('data-image', file);
+
+        // Thumbnail img elements are inserted without crossOrigin.
+        // This ensures thumbnails are visible when served from the same origin or typical servers.
+        const img = document.createElement('img');
+        console.debug('Thumbnail ->', imageFolder + file);
+        img.src = imageFolder + file;
+        img.alt = file;
+        img.onerror = () => { console.warn('Thumbnail failed to load:', imageFolder + file); box.style.display = 'none'; };
+
+        box.appendChild(img);
+        imageScroll.appendChild(box);
+      });
+    }
+
+    populateGallery();
+
+    bgTypeInputs.forEach(input => {
+      input.addEventListener('change', (e) => {
+        try{ pushState(); }catch(err){}
+        colorOptions.classList.remove('active');
+        imageOptions.classList.remove('active');
+        gradientOptions.classList.remove('active');
+        if (e.target.value === 'color') {
+          colorOptions.classList.add('active');
+        } else if (e.target.value === 'gradient') {
+          gradientOptions.classList.add('active');
+        } else {
+          imageOptions.classList.add('active');
+        }
+        renderPreview();
+      });
+    });
+
+    function updateGradientControlsVisibility(){
+      if(gradientType && gradientType.value === 'linear'){
+        linearControls.style.display = '';
+        radialControls.style.display = 'none';
+      } else {
+        linearControls.style.display = 'none';
+        radialControls.style.display = '';
+      }
+    }
+
+    [gradientColor1, gradientColor2, gradientType, gradientAngle, gradientRadialAngle, gradientRadialOffset].forEach(input => {
+      if(!input) return;
+      input.addEventListener('input', () => renderPreview());
+    });
+
+    if (gradientType) {
+      gradientType.addEventListener('change', () => {
+        updateGradientControlsVisibility();
+        renderPreview();
+      });
+    }
+    updateGradientControlsVisibility();
+    if (bgColorInput) bgColorInput.addEventListener('input', () => renderPreview());
+
+    function attachThumbnailHandlers(){
+      document.querySelectorAll('.image-box').forEach(box => {
+        box.addEventListener('click', () => {
+          try{ pushState(); }catch(err){}
+          const imagePath = box.getAttribute('data-image');
+          document.querySelectorAll('.image-box').forEach(b => b.classList.remove('active'));
+          box.classList.add('active');
+
+          // Load the image for preview WITHOUT crossOrigin so thumbnails remain visible.
+          // We will attempt a CORS reload only at download time.
+          const img = new Image();
+          img.onload = () => {
+            backgroundImage = img;
+            renderPreview();
+          };
+          img.onerror = () => { console.warn('Canvas image failed to load for preview:', imageFolder + imagePath); backgroundImage = null; renderPreview(); };
+          img.src = imageFolder + imagePath;
+        });
+      });
+    }
+
+    attachThumbnailHandlers();
+
+    // Initialize with first available thumbnail (load for preview without crossOrigin)
+    const firstImageBox = document.querySelector('.image-box');
+    if (firstImageBox) {
+      const imagePath = firstImageBox.getAttribute('data-image');
+      firstImageBox.classList.add('active');
+      const img = new Image();
+      img.onload = () => {
+        backgroundImage = img;
+        renderPreview();
+      };
+      img.onerror = () => { console.warn('Initial image failed to load:', imageFolder + imagePath); backgroundImage = null; renderPreview(); };
+      img.src = imageFolder + imagePath;
+    }
+
+    function getTextBounds(name, x, y){
+      const fontSize = parseInt(sizeInput.value,10) || 48;
+      ctx.font = `${fontSize}px "${fontSelect.value}"`;
+      ctx.textAlign = defaultAlign;
+      const metrics = ctx.measureText(name);
+      const w = metrics.width;
+      const h = fontSize;
+      let left = x;
+      if(ctx.textAlign === 'center') left = x - w/2;
+      if(ctx.textAlign === 'right') left = x - w;
+      return { left, top: y - h/2, width: w, height: h };
+    }
+
+    function pointerToCanvas(evt){
+      const rect = canvas.getBoundingClientRect();
+      const clientX = evt.clientX !== undefined ? evt.clientX : (evt.touches && evt.touches[0] && evt.touches[0].clientX);
+      const clientY = evt.clientY !== undefined ? evt.clientY : (evt.touches && evt.touches[0] && evt.touches[0].clientY);
+      return { x: clientX - rect.left, y: clientY - rect.top };
+    }
+
+    canvas.addEventListener('pointerdown', (e) => {
+      const p = pointerToCanvas(e);
+      ctx.font = `${parseInt(sizeInput.value,10)||48}px "${fontSelect.value}"`;
+      ctx.textAlign = defaultAlign;
+      const bounds = getTextBounds(nameInput.value || '', textPos.x, textPos.y);
+      if(p.x >= bounds.left && p.x <= bounds.left + bounds.width && p.y >= bounds.top && p.y <= bounds.top + bounds.height){
+        try{ pushStateIfNeeded(); }catch(err){}
+        draggingText = true;
+        textSelected = true;
+        dragOffset.x = p.x - textPos.x;
+        dragOffset.y = p.y - textPos.y;
+        try{ canvas.setPointerCapture(e.pointerId); }catch(err){}
+        canvas.style.cursor = 'grabbing';
+        updatePosReadout();
+      }
+    });
+
+    canvas.addEventListener('pointermove', (e) => {
+      const p = pointerToCanvas(e);
+      const bounds = getTextBounds(nameInput.value || '', textPos.x, textPos.y);
+      if(draggingText){
+        textPos.x = p.x - dragOffset.x;
+        textPos.y = p.y - dragOffset.y;
+        textPos.x = Math.min(Math.max(textPos.x, 0), canvas.width);
+        textPos.y = Math.min(Math.max(textPos.y, 0), canvas.height);
+        updatePosReadout();
+        renderPreview();
+      } else {
+        if(p.x >= bounds.left && p.x <= bounds.left + bounds.width && p.y >= bounds.top && p.y <= bounds.top + bounds.height){
+          canvas.style.cursor = 'grab';
+        } else {
+          canvas.style.cursor = 'default';
+        }
+      }
+    });
+
+    canvas.addEventListener('pointerup', (e) => {
+      if(draggingText){
+        draggingText = false;
+        try { canvas.releasePointerCapture(e.pointerId); } catch(err){}
+        canvas.style.cursor = 'default';
+        try{ pushStateIfNeeded(); }catch(err){}
+      }
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if(!textSelected) return;
+      let changed = false;
+      const step = e.shiftKey ? 10 : 1;
+      if(e.key === 'ArrowLeft'){ textPos.x -= step; changed = true; }
+      if(e.key === 'ArrowRight'){ textPos.x += step; changed = true; }
+      if(e.key === 'ArrowUp'){ textPos.y -= step; changed = true; }
+      if(e.key === 'ArrowDown'){ textPos.y += step; changed = true; }
+      if(changed){
+        e.preventDefault();
+        textPos.x = Math.min(Math.max(textPos.x, 0), canvas.width);
+        textPos.y = Math.min(Math.max(textPos.y, 0), canvas.height);
+        updatePosReadout();
+        renderPreview();
+      }
+    });
+
+    canvas.addEventListener('dblclick', ()=>{ textSelected = false; renderPreview(); });
+
+    function renderPreview(prepareForExport=false){
+      canvas.width = 900;
+      canvas.height = 300;
+      sizeInfo.textContent = canvas.width + ' × ' + canvas.height;
+      if(!textPos || typeof textPos.x !== 'number') textPos = { x: canvas.width/2, y: canvas.height/2 };
+      textPos.x = Math.min(Math.max(textPos.x, 0), canvas.width);
+      textPos.y = Math.min(Math.max(textPos.y, 0), canvas.height);
+      updatePosReadout();
+
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+
+      const bgType = document.querySelector('input[name="bgType"]:checked').value;
+
+      if (bgType === 'color') {
+        ctx.fillStyle = bgColorInput.value;
+        ctx.fillRect(0,0,canvas.width,canvas.height);
+      } else if (bgType === 'gradient') {
+        let gradient;
+        if (gradientType && gradientType.value === 'linear') {
+          const angle = parseInt(gradientAngle.value) * Math.PI / 180;
+          const x1 = canvas.width / 2 - Math.cos(angle) * canvas.width;
+          const y1 = canvas.height / 2 - Math.sin(angle) * canvas.height;
+          const x2 = canvas.width / 2 + Math.cos(angle) * canvas.width;
+          const y2 = canvas.height / 2 + Math.sin(angle) * canvas.height;
+          gradient = ctx.createLinearGradient(x1, y1, x2, y2);
+        } else {
+          const cx = canvas.width / 2;
+          const cy = canvas.height / 2;
+          const angleRad = (parseInt(gradientRadialAngle ? gradientRadialAngle.value : 0) || 0) * Math.PI / 180;
+          const offsetPercent = parseInt(gradientRadialOffset ? gradientRadialOffset.value : 0) || 0;
+          const offsetDist = (offsetPercent / 100) * (Math.min(canvas.width, canvas.height) / 2);
+          const x0 = cx + Math.cos(angleRad) * offsetDist;
+          const y0 = cy + Math.sin(angleRad) * offsetDist;
+          const r0 = 0;
+          const r1 = Math.max(canvas.width, canvas.height) / 2;
+          gradient = ctx.createRadialGradient(x0, y0, r0, cx, cy, r1);
+        }
+        if (gradient) {
+          gradient.addColorStop(0, gradientColor1.value);
+          gradient.addColorStop(1, gradientColor2.value);
+          ctx.fillStyle = gradient;
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+        } else {
+          ctx.fillStyle = '#2b2b2b';
+          ctx.fillRect(0,0,canvas.width,canvas.height);
+        }
+      } else {
+        if (backgroundImage) {
+          // Drawing the preview background image (loaded for preview without crossOrigin).
+          ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
+        } else {
+          ctx.fillStyle = '#2b2b2b';
+          ctx.fillRect(0,0,canvas.width,canvas.height);
+        }
+      }
+
+      // Render text
+      const name = nameInput.value || '';
+      const fontSize = parseInt(sizeInput.value,10) || 48;
+      const baseFont = fontSelect.value || 'Segoe UI, Roboto, Arial';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = colorInput.value || '#fff';
+      ctx.font = `${fontSize}px "${baseFont}"`;
+      ctx.shadowColor = 'rgba(0,0,0,0.35)';
+      ctx.shadowBlur = 8;
+
+      const align = defaultAlign;
+      ctx.textAlign = align;
+      let x = textPos.x;
+      let y = textPos.y;
+      if(!textSelected){
+        x = canvas.width/2;
+        if(align === 'left') x = canvas.width * 0.06;
+        if(align === 'right') x = canvas.width * 0.94;
+        y = canvas.height/2;
+        textPos.x = x; textPos.y = y;
+      }
+
+      if(name){
+        // Auto-fit text if too large
+        let measure = ctx.measureText(name);
+        if(measure.width > canvas.width * 0.9){
+          let s = fontSize;
+          while(s>12){
+            ctx.font = `${s}px "${baseFont}"`;
+            if(ctx.measureText(name).width <= canvas.width * 0.9) break;
+            s -= 2;
+          }
+        }
+        ctx.fillText(name, x, y);
+      }
+
+      if(textSelected && name){
+        ctx.save();
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = 'rgba(58,134,255,0.8)';
+        ctx.lineWidth = 2;
+        const metrics = ctx.measureText(name);
+        const textW = metrics.width;
+        const textH = parseInt(sizeInput.value,10) || 48;
+        let left = x;
+        if(ctx.textAlign === 'center') left = x - textW/2;
+        if(ctx.textAlign === 'right') left = x - textW;
+        ctx.strokeRect(left - 6, y - textH/2 - 6, textW + 12, textH + 12);
+        ctx.restore();
+      }
+
+      if(prepareForExport){
+        const data = canvas.toDataURL('image/png');
+        const a = document.createElement('a');
+        a.href = data;
+        a.download = (name||'nameplate').replace(/\s+/g,'_') + '.png';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      }
+    }
+
+    // --- Undo/Redo ---
+    const UNDO_LIMIT = 60;
+    const undoStack = [];
+    const redoStack = [];
+
+    function captureState(){
+      const activeImageBox = document.querySelector('.image-box.active');
+      const selectedImage = activeImageBox ? activeImageBox.getAttribute('data-image') : null;
+      return {
+        name: nameInput.value,
+        font: fontSelect.value,
+        size: sizeInput.value,
+        color: colorInput.value,
+        textPos: { x: textPos.x, y: textPos.y },
+        bgType: document.querySelector('input[name="bgType"]:checked').value,
+        bgColor: bgColorInput ? bgColorInput.value : null,
+        gradient: {
+          color1: gradientColor1 ? gradientColor1.value : null,
+          color2: gradientColor2 ? gradientColor2.value : null,
+          type: gradientType ? gradientType.value : null,
+          angle: gradientAngle ? gradientAngle.value : null,
+          radialAngle: gradientRadialAngle ? gradientRadialAngle.value : null,
+          radialOffset: gradientRadialOffset ? gradientRadialOffset.value : null,
+        },
+        selectedImage
+      };
+    }
+
+    function applyState(state){
+      if(!state) return;
+      nameInput.value = state.name ?? '';
+      fontSelect.value = state.font ?? fontSelect.value;
+      sizeInput.value = state.size ?? sizeInput.value;
+      colorInput.value = state.color ?? colorInput.value;
+      textPos.x = (state.textPos && state.textPos.x) || canvas.width/2;
+      textPos.y = (state.textPos && state.textPos.y) || canvas.height/2;
+
+      if(state.bgType){
+        const radio = document.querySelector(`input[name="bgType"][value="${state.bgType}"]`);
+        if(radio) radio.checked = true;
+      }
+      if(bgColorInput && state.bgColor) bgColorInput.value = state.bgColor;
+
+      if(state.gradient){
+        if(gradientColor1 && state.gradient.color1) gradientColor1.value = state.gradient.color1;
+        if(gradientColor2 && state.gradient.color2) gradientColor2.value = state.gradient.color2;
+        if(gradientType && state.gradient.type) gradientType.value = state.gradient.type;
+        if(gradientAngle && state.gradient.angle != null) gradientAngle.value = state.gradient.angle;
+        if(gradientRadialAngle && state.gradient.radialAngle != null) gradientRadialAngle.value = state.gradient.radialAngle;
+        if(gradientRadialOffset && state.gradient.radialOffset != null) gradientRadialOffset.value = state.gradient.radialOffset;
+      }
+
+      if(state.selectedImage){
+        document.querySelectorAll('.image-box').forEach(b => b.classList.remove('active'));
+        const match = document.querySelector(`.image-box[data-image="${state.selectedImage}"]`);
+        if(match){
+          match.classList.add('active');
+          // Load for preview without crossOrigin so thumbnails remain visible.
+          const img = new Image();
+          img.onload = () => { backgroundImage = img; renderPreview(); };
+          img.onerror = () => { backgroundImage = null; renderPreview(); };
+          img.src = imageFolder + state.selectedImage;
+        } else {
+          backgroundImage = null;
+        }
+      } else {
+        document.querySelectorAll('.image-box').forEach(b => b.classList.remove('active'));
+        backgroundImage = null;
+      }
+
+      if (typeof updateGradientControlsVisibility === 'function') updateGradientControlsVisibility();
+      renderPreview();
+    }
+
+    function updateUndoRedoButtons(){
+      const undoBtn = document.getElementById('undoBtn');
+      const redoBtn = document.getElementById('redoBtn');
+      if(undoBtn) undoBtn.disabled = undoStack.length === 0;
+      if(redoBtn) redoBtn.disabled = redoStack.length === 0;
+    }
+
+    function pushState(){
+      try{
+        const snap = captureState();
+        const last = undoStack[undoStack.length - 1];
+        if(last && JSON.stringify(last) === JSON.stringify(snap)) return;
+        undoStack.push(snap);
+        if(undoStack.length > UNDO_LIMIT) undoStack.shift();
+        redoStack.length = 0;
+        updateUndoRedoButtons();
+      }catch(e){ console.warn('pushState failed', e); }
+    }
+
+    function pushStateIfNeeded(){
+      const snap = captureState();
+      const last = undoStack[undoStack.length - 1];
+      if(!last || JSON.stringify(last) !== JSON.stringify(snap)) pushState();
+    }
+
+    function undo(){
+      if(undoStack.length === 0) return;
+      const prev = undoStack.pop();
+      const current = captureState();
+      redoStack.push(current);
+      applyState(prev);
+      updateUndoRedoButtons();
+    }
+
+    function redo(){
+      if(redoStack.length === 0) return;
+      const next = redoStack.pop();
+      const current = captureState();
+      undoStack.push(current);
+      applyState(next);
+      updateUndoRedoButtons();
+    }
+
+    window.addEventListener('keydown', (e) => {
+      const ctrlOrCmd = e.ctrlKey || e.metaKey;
+      if(!ctrlOrCmd) return;
+      if(e.key.toLowerCase() === 'z' && !e.shiftKey){ e.preventDefault(); undo(); }
+      if(e.key.toLowerCase() === 'y' || (e.key.toLowerCase() === 'z' && e.shiftKey)){ e.preventDefault(); redo(); }
+    });
+
+    document.getElementById('undoBtn')?.addEventListener('click', undo);
+    document.getElementById('redoBtn')?.addEventListener('click', redo);
+
+    nameInput.addEventListener('focus', () => { pushStateIfNeeded(); });
+    nameInput.addEventListener('blur', () => { pushStateIfNeeded(); });
+    fontSelect.addEventListener('change', () => { pushState(); });
+    sizeInput.addEventListener('change', () => { pushState(); });
+    colorInput.addEventListener('input', () => { pushStateIfNeeded(); });
+
+    pushStateIfNeeded();
+
+    document.getElementById('render').addEventListener('click', () => renderPreview());
+
+    // Download uses same render path (ensures gradients are drawn) and awaits background image decode if necessary.
+    // Attempt to reload the selected background with crossOrigin='anonymous' for export only.
+    document.getElementById('download').addEventListener('click', async () => {
+      canvas.width = 900;
+      canvas.height = 300;
+
+      const bgType = document.querySelector('input[name="bgType"]:checked').value;
+
+      // Keep reference to restore after export
+      const previousBackground = backgroundImage;
+
+      if (bgType === 'image' && backgroundImage) {
+        // Attempt to re-load the image with crossOrigin='anonymous' to avoid canvas tainting.
+        // If this fails (e.g. remote host doesn't send CORS headers), fall back to removing the background before export
+        try {
+          const corsImg = new Image();
+          corsImg.crossOrigin = 'anonymous';
+          await new Promise((resolve, reject) => {
+            corsImg.onload = resolve;
+            corsImg.onerror = reject;
+            // backgroundImage.src is expected to be the same URL as the thumbnail/image used
+            corsImg.src = backgroundImage.src;
+          });
+          backgroundImage = corsImg;
+        } catch (e) {
+          console.warn('CORS reload failed; removing background image for export to avoid taint', e);
+          backgroundImage = null;
+        }
+      }
+
+      // Render and attempt export
+      renderPreview();
+
+      try {
+        const name = (nameInput.value || 'nameplate').replace(/\s+/g,'_');
+        const data = canvas.toDataURL('image/png');
+        const a = document.createElement('a');
+        a.href = data;
+        a.download = name + '.png';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      } catch (err) {
+        console.error('Export failed (likely because the canvas is tainted by a cross-origin image):', err);
+        alert('Download failed because a background image is from another origin without CORS. To download, host the images on the same origin or enable CORS on the image server.');
+      } finally {
+        // Restore previous background (whether it's null or an Image instance)
+        backgroundImage = previousBackground;
+        renderPreview();
+      }
+    });
+
+    // Initial render
+    renderPreview();
+  </script>
+</body>
+</html>
